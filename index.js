@@ -3,8 +3,7 @@ const axios = require('axios');
 
 const app = express();
 const port = 3000;
-
-
+app.use(express.json())
 const WINDOW_SIZE = 10;
 
 let numberWindow = [];
@@ -18,18 +17,41 @@ const calculateAverage = (numbers) => {
 };
 
 app.get('/numbers/:numberid', async (req, res) => {
+    var access_token=0;
   const { numberid } = req.params;
-  const type1=null;
+  let type1=null;
   console.log(numberid)
   const validIds = ['p', 'f', 'e', 'r'];
   try {
-    accessToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiZXhwIjoxNzE4MjYwMzMzLCJpYXQiOjE3MTgyNjAwMzMsImlzcyI6IkFmZm9yZG1lZCIsImp0aSI6ImU0OTQyNGQyLThjNWItNGFkYS05MDZhLWEyMDVhMWRmODgxMSIsInN1YiI6IjIxMDAwMzAxNTVjc2VoQGdtYWlsLmNvbSJ9LCJjb21wYW55TmFtZSI6IkNvZGVzaWduIiwiY2xpZW50SUQiOiJlNDk0MjRkMi04YzViLTRhZGEtOTA2YS1hMjA1YTFkZjg4MTEiLCJjbGllbnRTZWNyZXQiOiJuQUdBSGZ6Q1ZpSkZkbHpWIiwib3duZXJOYW1lIjoiTGFsaXRoIiwib3duZXJFbWFpbCI6IjIxMDAwMzAxNTVjc2VoQGdtYWlsLmNvbSIsInJvbGxObyI6IjIxMDAwMzAxNTUifQ.7vhVSBO7uC4RMca0Y_3B1mzojeaC3C5U4UYkk6Dc96g" 
+    fetch("http://20.244.56.144/test/auth", { 
+      
+   // Adding method type 
+   method: "POST", 
+     
+   // Adding body or contents to send 
+   body: JSON.stringify({ 
+    
+        "companyName": "Codesign",
+        "clientID": "e49424d2-8c5b-4ada-906a-a205a1df8811",
+        "clientSecret": "nAGAHfzCViJFdlzV",
+        "ownerName": "Lalith",
+        "ownerEmail": "2100030155cseh@gmail.com",
+        "rollNo": "2100030155"
+    
+   }),  
+}).then(response=>response.json())
+.then(jsonData=>  accessToken=jsonData["access_token"]);
+console.log(accessToken);
+console.log("-------------------------------------------------------------------------")
     if(numberid=="e"){ type1="even"}
     else if(numberid="f"){ type1="fibo"}
     else if(numberid="p"){ type1="prime"}
     else if(numberid="r"){ type1="random"}
-    const response = await axios.get(`http://20.244.56.144/test/${type1}`,{ 'Authorization': {headers: {'Authorization': `Bearer ${accessToken}`} }});
-    console.log(response);
+   fetch(`http://20.244.56.144/test/${type1}`, {
+  headers: {Authorization: `Bearer ${accessToken}`}
+})
+    .then(resp => resp.json())
+   .then(json => console.log(JSON.stringify(json)))
     const newNumbers = response.data.numbers;
 
     const windowPrevState = [...numberWindow];
@@ -52,7 +74,7 @@ app.get('/numbers/:numberid', async (req, res) => {
 
     res.json(responseData);
   } catch (error) {
-
+   
     res.status(500).json(error);
   }
 });
