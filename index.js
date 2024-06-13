@@ -1,84 +1,56 @@
 const express = require('express');
 const axios = require('axios');
-
 const app = express();
-const port = 3000;
-app.use(express.json())
+const port =9876;
+
 const WINDOW_SIZE = 10;
-
-let numberWindow = [];
-
+const testServerUrl = 'http://20.244.56.144/test';
+let windowNumbers = [];
 const calculateAverage = (numbers) => {
-    let sum=0
-    numbers.forEach(function(item,index){
-        sum+=item;
-    });
-    return sum/numbers.length;
+  const sum = numbers.reduce((acc, num) => acc + num, 0);
+  return (sum / numbers.length) || 0;
 };
 
 app.get('/numbers/:numberid', async (req, res) => {
-    var access_token=0;
   const { numberid } = req.params;
-  let type1=null;
-  console.log(numberid)
-  const validIds = ['p', 'f', 'e', 'r'];
+  var t=0;
+  if (!['p', 'f', 'e', 'r'].includes(numberid)) {
+    return res.status(400).json({ error: 'Invalid numberid' });
+  }
+  if(numberid=="e"){t="even"}
+  else if(numberid=="f"){t="fibo"}
+  else if(numberid=="p"){t="primes"}
+  else{t="rand"}
+const authToken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiZXhwIjoxNzE4MjY2NTM0LCJpYXQiOjE3MTgyNjYyMzQsImlzcyI6IkFmZm9yZG1lZCIsImp0aSI6ImU0OTQyNGQyLThjNWItNGFkYS05MDZhLWEyMDVhMWRmODgxMSIsInN1YiI6IjIxMDAwMzAxNTVjc2VoQGdtYWlsLmNvbSJ9LCJjb21wYW55TmFtZSI6IkNvZGVzaWduIiwiY2xpZW50SUQiOiJlNDk0MjRkMi04YzViLTRhZGEtOTA2YS1hMjA1YTFkZjg4MTEiLCJjbGllbnRTZWNyZXQiOiJuQUdBSGZ6Q1ZpSkZkbHpWIiwib3duZXJOYW1lIjoiTGFsaXRoIiwib3duZXJFbWFpbCI6IjIxMDAwMzAxNTVjc2VoQGdtYWlsLmNvbSIsInJvbGxObyI6IjIxMDAwMzAxNTUifQ.KLsoFja5G--OjfJh8a6aLdpeX6oxUr2UoKqz6-Sd3ms"
   try {
-    fetch("http://20.244.56.144/test/auth", { 
-      
-   // Adding method type 
-   method: "POST", 
-     
-   // Adding body or contents to send 
-   body: JSON.stringify({ 
-    
-        "companyName": "Codesign",
-        "clientID": "e49424d2-8c5b-4ada-906a-a205a1df8811",
-        "clientSecret": "nAGAHfzCViJFdlzV",
-        "ownerName": "Lalith",
-        "ownerEmail": "2100030155cseh@gmail.com",
-        "rollNo": "2100030155"
-    
-   }),  
-}).then(response=>response.json())
-.then(jsonData=>  accessToken=jsonData["access_token"]);
-console.log(accessToken);
-console.log("-------------------------------------------------------------------------")
-    if(numberid=="e"){ type1="even"}
-    else if(numberid="f"){ type1="fibo"}
-    else if(numberid="p"){ type1="prime"}
-    else if(numberid="r"){ type1="random"}
-   fetch(`http://20.244.56.144/test/${type1}`, {
-  headers: {Authorization: `Bearer ${accessToken}`}
-})
-    .then(resp => resp.json())
-   .then(json => console.log(JSON.stringify(json)))
-    const newNumbers = response.data.numbers;
-
-    const windowPrevState = [...numberWindow];
-
-    newNumbers.forEach(num => {
-      if (!numberWindow.includes(num)) {
-        numberWindow.push(num);
-        if (numberWindow.length > WINDOW_SIZE) {
-          numberWindow.shift();
-        }
+    const response = await axios.get(`${testServerUrl}/${t}`, {
+      timeout: 500,
+      headers: {
+        'Authorization': `Bearer ${authToken}`
       }
     });
+    const newNumbers = response.data.numbers;
+    
+    windowNumbers = [...new Set([...windowNumbers, ...newNumbers])];
+    if (windowNumbers.length > WINDOW_SIZE) {
+      windowNumbers = windowNumbers.slice(-WINDOW_SIZE);
+    }
+    
+    const average = calculateAverage(windowNumbers);
 
-    const responseData = {
+    const result = {
       numbers: newNumbers,
-      windowPrevState,
-      windowCurrState: numberWindow,
-      avg: calculateAverage(numberWindow).toFixed(2)
+      windowPrevState: windowNumbers.slice(0, windowNumbers.length - newNumbers.length),
+      windowCurrState: windowNumbers,
+      avg: average
     };
-
-    res.json(responseData);
+    
+    res.json(result);
   } catch (error) {
-   
-    res.status(500).json(error);
+    res.status(500).json({ error: error });
   }
 });
 
 app.listen(port, () => {
-  console.log(`server listening at http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
